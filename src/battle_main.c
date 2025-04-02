@@ -8,6 +8,7 @@
 #include "battle_interface.h"
 #include "battle_main.h"
 #include "battle_message.h"
+#include "data/dynastic_shortcuts.h"
 // #include "battle_pyramid.h"
 #include "battle_scripts.h"
 #include "battle_setup.h"
@@ -1936,6 +1937,8 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
     u32 personalityValue;
     s32 i;
     u8 monsCount;
+    u8 isTrainerBossTrainer = trainer->isBossTrainer;
+    u8 trainerClass = trainer->trainerClass;
     if (battleTypeFlags & BATTLE_TYPE_TRAINER && !(battleTypeFlags & (BATTLE_TYPE_FRONTIER
                                                                         | BATTLE_TYPE_EREADER_TRAINER
                                                                         | BATTLE_TYPE_TRAINER_HILL)))
@@ -1957,6 +1960,11 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
 
         u32 monIndices[monsCount];
         DoTrainerPartyPool(trainer, monIndices, monsCount, battleTypeFlags);
+        bool8 decidedLevel = FALSE;
+        u8 maxLevel;
+        u8 playerLevelMinus;
+        u8 finalLevel;
+
 
         for (i = 0; i < monsCount; i++)
         {
@@ -1967,6 +1975,7 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
             u32 otIdType = OT_ID_RANDOM_NO_SHINY;
             u32 fixedOtId = 0;
             u32 abilityNum = 0;
+            u16 species = partyData[i].species;
 
             if (trainer->doubleBattle == TRUE)
                 personalityValue = 0x80;
@@ -1988,8 +1997,53 @@ u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer 
                 otIdType = OT_ID_PRESET;
                 fixedOtId = HIHALF(personalityValue) ^ LOHALF(personalityValue);
             }
-            CreateMon(&party[i], partyData[monIndex].species, partyData[monIndex].lvl, 0, TRUE, personalityValue, otIdType, fixedOtId);
-            SetMonData(&party[i], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
+
+            if(trainerClass == TRAINER_CLASS_ELITE_FOUR || trainerClass == TRAINER_CLASS_CHAMPION)
+            {
+                CreateMon(&party[monIndex], species, 85, 0, TRUE, personalityValue, otIdType, fixedOtId);
+                SetMonData(&party[monIndex], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
+            }
+            else if(partyData[monIndex].lvl >= 100)
+            {
+                playerLevelMinus = partyData[monIndex].lvl - 100;
+                if(!decidedLevel)
+                {
+                    maxLevel = DecideLevel();
+                    decidedLevel = TRUE;
+                }
+                finalLevel = maxLevel - playerLevelMinus;
+                if(isTrainerBossTrainer && IsEasyMode())
+                    finalLevel -=2;
+
+                if(partyData[monIndex].lvl == PLAYER_MAX)
+                    finalLevel = finalLevel;
+
+                if(partyData[monIndex].lvl == ONE_BELOW_PLAYER_MAX)
+                    finalLevel -=1;
+                    
+                if(partyData[monIndex].lvl == TWO_BELOW_PLAYER_MAX)
+                    finalLevel -=2;
+
+                if(finalLevel <= 0 || finalLevel > 100)
+                {
+                    finalLevel = maxLevel;
+                }
+                CreateMon(&party[monIndex], species, finalLevel, 31, TRUE, personalityValue, otIdType, fixedOtId);
+                SetMonData(&party[monIndex], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);  
+            }
+            else
+            {
+                if(isTrainerBossTrainer && IsEasyMode())
+                {
+                    CreateMon(&party[monIndex], species, partyData[monIndex].lvl-2, 0, TRUE, personalityValue, otIdType, fixedOtId);
+                    SetMonData(&party[monIndex], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
+                }
+                else
+                {
+                    CreateMon(&party[monIndex], species, partyData[monIndex].lvl, 0, TRUE, personalityValue, otIdType, fixedOtId);
+                    SetMonData(&party[monIndex], MON_DATA_HELD_ITEM, &partyData[monIndex].heldItem);
+                }
+            }
 
             CustomTrainerPartyAssignMoves(&party[i], &partyData[monIndex]);
             SetMonData(&party[i], MON_DATA_IVS, &(partyData[monIndex].iv));

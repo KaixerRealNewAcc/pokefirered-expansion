@@ -246,6 +246,7 @@ struct Time
 struct SaveBlock3
 {
 #if OW_USE_FAKE_RTC
+    u8 permanentRepel:1;
     struct SiiRtcInfo fakeRTC;
 #endif
 #if OW_SHOW_ITEM_DESCRIPTIONS == OW_ITEM_DESCRIPTIONS_FIRST_TIME
