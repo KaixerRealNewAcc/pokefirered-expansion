@@ -1932,6 +1932,20 @@ void CustomTrainerPartyAssignMoves(struct Pokemon *mon, const struct TrainerMon 
     }
 }
 
+static u8 DecideLevel(void)
+{
+    u32 i;
+    u8 newhighest = 0;
+    for (i = 0; i < 6; i++)
+    {
+        u16 level = (GetMonData(&gPlayerParty[i], MON_DATA_LEVEL));
+        if (level > newhighest)
+            newhighest = level;
+    }
+    return newhighest;
+}
+
+
 u8 CreateNPCTrainerPartyFromTrainer(struct Pokemon *party, const struct Trainer *trainer, bool32 firstTrainer, u32 battleTypeFlags)
 {
     u32 personalityValue;
